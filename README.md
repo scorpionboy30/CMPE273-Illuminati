@@ -13,7 +13,7 @@ I) 'sayHelloToServer' api exposed as a zeroservice
 Access the zeroservice:
 -----------------------
 
-Create a <test-class-name>.java.
+Create a "test-class-name".java.
 
 In its main(), start the server and the client.
 
