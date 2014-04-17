@@ -7,8 +7,9 @@ This project provides java bindings for zerorpc.
 Both the server as well as the client are written in java.
 This zerorpc can be used programmatically.
 
-I) 'sayHelloToServer' api exposed as a zeroservice
-
+I) basic arithematic operations api exposed as a zeroservice
+II) different datatypes like array,hashmap can be sent from client to server and received back to client.
+III) error propagation from server to client.
 
 Access the zeroservice:
 -----------------------
@@ -17,9 +18,9 @@ Create a "test-class-name".java.
 
 In its main(), start the server and the client.
 
-Now call the api from the client.
+Now call the api from this class.
 
-e.g. /src/test/TestZeroRPC.java
+e.g. /src/test/TestMain.java
 
 
 To Run this project:
@@ -33,4 +34,4 @@ In the command prompt, traverse to this repo.
 
 > mvn clean package
 
-> mvn exec:java -Dexec.mainClass="test.TestZeroRPC"
+> mvn exec:java -Dexec.mainClass="test.Main"
