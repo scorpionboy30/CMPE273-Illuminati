@@ -34,4 +34,4 @@ In the command prompt, traverse to this repo.
 
 > mvn clean package
 
-> mvn exec:java -Dexec.mainClass="test.Main"
+> mvn exec:java -Dexec.mainClass="TestMain"
