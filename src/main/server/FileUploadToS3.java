@@ -17,11 +17,7 @@ import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 
 public class FileUploadToS3 {
-	/*
-
-	 @author: Nitish
-
-	 */
+	
 public static String UploadToS3(String bucketname, String filename, String filepath) throws IOException{
 				
 	String existingBucketName=bucketname; 
