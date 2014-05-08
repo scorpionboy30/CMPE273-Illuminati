@@ -42,13 +42,16 @@ public class TestMain {
 			case 1:
 				a = 4;
 				b = (float) 5.6;
-				client.executeFunction("add", a, b);
+				int z = 2;
+				int y = 6;
+				client.executeFunction("add", a, y, z);
 				break;
 				
 			case 2:
 				a = 4;
 				b = 0;
-				client.executeFunction("subtract", a, b);
+				int d = 2;
+				client.executeFunction("subtract", a, d);
 				break;
 				
 			case 3:

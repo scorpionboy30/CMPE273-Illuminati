@@ -27,7 +27,7 @@ public class TestHashMap {
 		for(int i=0; i<20; i++){
 			client.sendHashMap("sendHashMap", nameMap);
 			try {
-				Thread.currentThread().sleep(1000);
+				Thread.currentThread().sleep(5000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
