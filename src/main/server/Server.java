@@ -7,14 +7,22 @@ package main.server;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import main.command.CommandWrapper;
 import main.exception.DivideByZeroException;
 import main.exception.TypeMisMatchException;
+import main.library.Book;
+import main.library.BookRepository;
+import main.library.BookRepositoryInterface;
 
 import org.msgpack.MessagePack;
+import org.msgpack.template.Template;
 import org.msgpack.template.Templates;
 import org.msgpack.type.Value;
 import org.msgpack.unpacker.Converter;
@@ -23,6 +31,7 @@ import org.zeromq.ZMQ;
 
 public class Server implements Runnable {
 
+	BookRepositoryInterface bookRepository;
 	ZMQ.Context context = null;
 	ZMQ.Socket socket = null;
 
@@ -64,6 +73,32 @@ public class Server implements Runnable {
 		}
 		return resultMap;
 	}
+	
+	public Book saveBook(CommandWrapper command){
+		System.out.println("Save Book Method on ZeroRPC Server Called");
+		MessagePack msgpack = new MessagePack();
+		Value values[] = command.getArgs();
+		MessagePack packer = new MessagePack();
+		Book savedBook = null;
+		try {
+			Book bookObj = new Converter(values[0]).read(Book.class);
+			//MyMessage dst = msgpack.read(bytes, MyMessage.class);
+			System.out.println("BookObj Using values:"+bookObj.getTitle());
+			//packer.register(Book.class);
+			//Book dst = msgpack.read(argument, Book.class);
+			/*Book book1 =  packer.createUnpacker(
+					new ByteArrayInputStream(argument)).read(
+					new Book());*/
+			//System.out.println("using bytes Isbn:"+dst.getIsbn()+"|| Title"+dst.getTitle());
+			
+			savedBook = bookRepository.saveBook(bookObj);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return savedBook;
+	}
+	
 	/**
 	 * This method will retrieve the received array and multiply the number by 2 and return the modified array
 	 * @param command
@@ -73,7 +108,7 @@ public class Server implements Runnable {
 	private int[] printNumArr(CommandWrapper command) throws IOException {
 		Value[] argument = command.getArgs();
 		MessagePack msgpack = new MessagePack();
-		byte raw[] = msgpack.write(argument[0]);
+		byte raw[] = msgpack.write(argument);
 		ByteArrayInputStream in = new ByteArrayInputStream(raw);
         Unpacker unpacker = msgpack.createUnpacker(in);
 		
@@ -107,7 +142,7 @@ public class Server implements Runnable {
 
 	@Override
 	public void run() {
-		System.out.println("Server Created");
+		System.out.println("Server Started");
 		while (true) {
 			final MessagePack packer = new MessagePack();
 			final ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -125,26 +160,90 @@ public class Server implements Runnable {
 				}else if("sendNumberArray".equals(command.getMethodName())){
 					System.out.println("sendNumberArray() method called...");
 					packer.write(out, printNumArr(command));	
-				}else{
+				}else if("saveBook".equals(command.getMethodName())){
+					packer.write(out, saveBook(command));
+				}else if("uploadtos3".equals(command.getMethodName())){
+					System.out.println(command.getMethodName()+" method called...");
+					packer.write(out, FileUploadToS3.UploadToS3());	
+				
+				}else if("deleteBook".equals(command.getMethodName())){
+					deleteBook(command);
+				
+				}else if("createLibraryHashMap".equals(command.getMethodName())){
+					createLibraryHashMap();
+					
+				}else if("getBookByIsbn".equals(command.getMethodName())){
+					packer.write(out, getBookByIsbn(command));
+
+				}else if("updateBookByIsbn".equals(command.getMethodName())){
+					packer.write(out, updateBookByIsbn(command));
+				}else if("setDateInMemoryMap".equals(command.getMethodName())){
+					setDateInMemoryMap(command);
+				}else if("getDateInMemoryMap".equals(command.getMethodName())){
+					packer.write(out, getDateInMemoryMap());
+				}
+				else{
 					System.out.println(command.getMethodName()+"() method called...");
 					packer.write(out, performOperation(command));
 				}
 				this.socket.send(out.toByteArray());
 			} catch (Exception e) {
+				e.printStackTrace();
 				System.out.println("Error at server!!!");
+				final StringWriter sw = new StringWriter();
+			     final PrintWriter pw = new PrintWriter(sw, true);
+			     e.printStackTrace(pw);
 				try {
-					packer.write(out, e.getMessage());
+					packer.write(out, sw.getBuffer().toString());
 					this.socket.send(out.toByteArray());
 				} catch (IOException e1) {
 					e1.printStackTrace();
 					//break;
 				}
-				//break;
 			}
 
 		}
-		//socket.close();
-		//context.term();
+	}
+
+	private ConcurrentHashMap<Long, Date> getDateInMemoryMap() {
+		return bookRepository.getDateInMemoryMap();
+	}
+
+	private void setDateInMemoryMap(CommandWrapper command) throws IOException {
+		Value values[] = command.getArgs();
+		Long isbn = new Converter(values[0]).read(Templates.TLong);
+		Date newDate = new Converter(values[1]).read(Date.class);
+		bookRepository.setDateInMemoryMap(isbn, newDate);
+	}
+
+	private void deleteBook(CommandWrapper command) throws IOException {
+		Value values[] = command.getArgs();
+		Long isbn = new Converter(values[0]).read(Templates.TLong);
+		bookRepository.deleteBook(isbn);
+	}
+
+	private Book updateBookByIsbn(CommandWrapper command) throws IOException {
+		Book updatedBook = null;
+		Value values[] = command.getArgs();
+		Long isbn = new Converter(values[0]).read(Templates.TLong);
+		String status = new Converter(values[1]).read(Templates.TString);
+		updatedBook = bookRepository.updateBook(isbn, status);
+		return updatedBook;
+	}
+
+	private Book getBookByIsbn(CommandWrapper command) throws IOException {
+		Book book = null;
+		Value values[] = command.getArgs();
+		Long isbn = new Converter(values[0]).read(Templates.TLong);
+		book = bookRepository.getBookByISBN(isbn);
+		return book;
+	}
+
+	/**
+	 * Initialize new HashMap
+	 */
+	private void createLibraryHashMap() {
+		bookRepository = new BookRepository(new ConcurrentHashMap<Long, Book>());
 	}
 
 }
