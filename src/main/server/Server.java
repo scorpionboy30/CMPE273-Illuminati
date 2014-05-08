@@ -74,6 +74,18 @@ public class Server implements Runnable {
 		return resultMap;
 	}
 	
+	public String uploadFile(CommandWrapper command) throws IOException
+	{
+		Value[] argument = command.getArgs();
+		
+		String bucketname = new Converter(argument[0]).read(Templates.TString);
+		String filename = new Converter(argument[1]).read(Templates.TString);
+		String filepath = new Converter(argument[2]).read(Templates.TString);
+		
+		String reply = FileUploadToS3.UploadToS3(bucketname, filename, filepath);
+		return reply;
+	}
+	
 	public Book saveBook(CommandWrapper command){
 		System.out.println("Save Book Method on ZeroRPC Server Called");
 		MessagePack msgpack = new MessagePack();
@@ -164,7 +176,7 @@ public class Server implements Runnable {
 					packer.write(out, saveBook(command));
 				}else if("uploadtos3".equals(command.getMethodName())){
 					System.out.println(command.getMethodName()+" method called...");
-					packer.write(out, FileUploadToS3.UploadToS3());	
+					packer.write(out, uploadFile(command));	
 				
 				}else if("deleteBook".equals(command.getMethodName())){
 					deleteBook(command);
